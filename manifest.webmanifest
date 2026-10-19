@@ -1,0 +1,16 @@
+{
+  "name": "Noxie's Starry School",
+  "short_name": "Noxie School",
+  "description": "Learning game for kids ages 4-6: Math, English and Filipino.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#2b1840",
+  "theme_color": "#2b1840",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
