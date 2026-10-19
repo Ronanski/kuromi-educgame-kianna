@@ -1,10 +1,18 @@
 {
   "name": "noxie-starry-school",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "smoke": "node tests/smoke.mjs",
-    "serve": "npx http-server -p 8080 -c-1 ."
+    "serve": "npx http-server -p 8080 -c-1 .",
+    "build:web": "rm -rf www && mkdir www && cp -r index.html manifest.webmanifest sw.js css js icons www/"
+  },
+  "dependencies": {
+    "@capacitor-community/text-to-speech": "^6.0.0",
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
   }
 }
