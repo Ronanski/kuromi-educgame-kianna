@@ -21,6 +21,13 @@
 - Not yet tested on a real phone (drag feel, native voice pitch).
 - Ideas: Katapatan (honesty), Paghingi ng permiso, Pagtulong sa gawaing bahay, Paghuhugas ng kamay.
 
+## v0.2.1 Permanent signing key
+- Problem: v0.1.0 and v0.2.0 were each signed with a random CI key, so v0.2.0 could not install over v0.1.0
+  ("App not installed"). The owner had to uninstall.
+- Fix: every release is signed with one permanent key from the `ANDROID_KEYSTORE_B64` secret, and versionCode goes up
+  each release. Phones must uninstall ONE last time before v0.2.1; updates after that work normally.
+- Needs the owner to add the secret (docs/SIGNING.md) before the v0.2.1 release can build.
+
 ## Ideas next
 - More question types (shapes, bigger/smaller, Filipino alphabet / ABAKADA)
 - Difficulty levels, simple background music, native APK via Capacitor if needed

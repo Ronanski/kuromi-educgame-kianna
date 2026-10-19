@@ -42,9 +42,28 @@ jobs:
           done
           npx cap sync android
       - if: steps.ver.outputs.exists == 'false'
+        name: Use the permanent signing key and version number
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          # Same key for every release, so phones can install updates over the old version.
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_B64 is missing. See docs/SIGNING.md."
+            exit 1
+          fi
+          mkdir -p ~/.android
+          echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+          # versionCode must go up each release: 0.2.1 -> 201, 1.3.0 -> 10300.
+          V=${{ steps.ver.outputs.version }}
+          CODE=$(node -p "const [a,b,c]='$V'.split('.').map(Number); a*10000+b*100+c")
+          sed -i "s/versionCode 1$/versionCode $CODE/; s/versionName \"1.0\"/versionName \"$V\"/" android/app/build.gradle
+          grep -nE "versionCode|versionName" android/app/build.gradle
+      - if: steps.ver.outputs.exists == 'false'
         name: Build APK
         run: |
           cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+          # Stop the release if the APK is not signed with the permanent key (public fingerprint, not a secret).
+          keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk | grep -q "4D:A9:48:F2:3B:A8:DC:81:27:FE:74:52:38:A6:48:83:12:8F:75:16:C7:36:7B:3B:F2:65:F7:D1:83:0E:8E:95"
           cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/noxie-school-v${{ steps.ver.outputs.version }}.apk"
       - if: steps.ver.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
