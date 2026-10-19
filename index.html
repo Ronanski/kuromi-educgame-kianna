@@ -27,6 +27,7 @@
         <button class="subject-btn math" data-subject="math"><span>🔢</span>Math</button>
         <button class="subject-btn english" data-subject="english"><span>🔤</span>English</button>
         <button class="subject-btn filipino" data-subject="filipino"><span>🇵🇭</span>Filipino</button>
+        <button class="subject-btn values" id="btn-values"><span>💜</span>Mabuting Asal</button>
       </div>
       <button class="link-btn" id="btn-parent">Para sa Magulang</button>
     </section>
@@ -58,6 +59,43 @@
       </div>
     </section>
 
+    <!-- Mabuting Asal: lesson menu -->
+    <section id="screen-values" class="screen">
+      <div class="topbar">
+        <button class="icon-btn" id="btn-values-home" aria-label="Home">🏠</button>
+        <span class="stars-pill" id="values-count">💜 0</span>
+        <span></span>
+      </div>
+      <h1>Mabuting Asal</h1>
+      <p class="sub">Panoorin, tapos ikaw naman ang gagawa!</p>
+      <div class="lesson-grid" id="values-grid"></div>
+    </section>
+
+    <!-- Mabuting Asal: playing a lesson -->
+    <section id="screen-lesson" class="screen">
+      <div class="topbar">
+        <button class="icon-btn" id="btn-lesson-back" aria-label="Back">⬅️</button>
+        <b id="lesson-title"></b>
+        <span></span>
+      </div>
+      <div class="phase" id="lesson-phase"></div>
+      <div class="stage" id="stage"></div>
+      <p class="caption" id="lesson-caption"></p>
+    </section>
+
+    <!-- Mabuting Asal: lesson finished -->
+    <section id="screen-lesson-done" class="screen">
+      <div class="badge" id="done-icon"></div>
+      <h1 id="done-title"></h1>
+      <button class="phrase-btn" id="btn-say-phrase"><span id="done-phrase"></span> 🔊</button>
+      <p class="sub" id="done-stars"></p>
+      <div class="row">
+        <button class="big-btn" id="btn-lesson-again">Ulitin</button>
+        <button class="big-btn alt" id="btn-lesson-menu">Iba pang aralin</button>
+      </div>
+      <p class="tip"><b>Para sa magulang:</b> <span id="done-tip"></span></p>
+    </section>
+
     <!-- Stickers -->
     <section id="screen-stickers" class="screen">
       <div class="topbar">
@@ -73,8 +111,14 @@
     <!-- Parent -->
     <section id="screen-parent" class="screen">
       <h1>Para sa Magulang</h1>
-      <p class="sub">Para sa batang 4-6 taong gulang: pagbilang, simple addition/subtraction, English words at letters, Filipino na salita, kulay at numero. Bawat round ay 5 tanong. Lahat ng progress ay naka-save lang sa device na ito.</p>
+      <p class="sub">Para sa batang 4-6 taong gulang: pagbilang, simple addition/subtraction, English words at letters, Filipino na salita, kulay at numero, at Mabuting Asal (pagmamano, po at opo, salamat, pagbabahagi, pagliligpit, basura, sorry, pagpila). Bawat round ay 5 tanong. Lahat ng progress ay naka-save lang sa device na ito.</p>
       <label class="toggle"><input type="checkbox" id="opt-voice" checked> Basahin nang malakas ang tanong (voice)</label>
+      <label class="toggle">Boses:
+        <select id="opt-voice-style">
+          <option value="cute">Cute (matinis)</option>
+          <option value="normal">Normal</option>
+        </select>
+      </label>
       <div class="mascot-picker">
         <div class="mascot" id="mascot-preview"></div>
         <div class="row">
