@@ -45,8 +45,26 @@ function beep(freqs, dur = 0.12) {
 const sfxRight = () => beep([660, 880, 1175]);
 const sfxWrong = () => beep([300, 220], 0.15);
 
+// Android app (Capacitor): the WebView has no speechSynthesis, so use the phone's
+// native text-to-speech plugin instead. Undefined when running in a browser.
+const nativeTTS = window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins?.TextToSpeech : undefined;
+
+function stopSpeech() {
+  if (nativeTTS) nativeTTS.stop().catch(() => {});
+  else if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
+
 function speak(text, lang = 'en-US') {
-  if (!state.voice || !('speechSynthesis' in window)) return;
+  if (!state.voice) return;
+  if (nativeTTS) {
+    const opts = { text, rate: 0.9, pitch: 1.2, volume: 1.0, category: 'ambient' };
+    nativeTTS.stop().catch(() => {})
+      // Filipino voice may not be installed; retry in English.
+      .then(() => nativeTTS.speak({ ...opts, lang }))
+      .catch(() => lang !== 'en-US' && nativeTTS.speak({ ...opts, lang: 'en-US' }).catch(() => {}));
+    return;
+  }
+  if (!('speechSynthesis' in window)) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   const voices = speechSynthesis.getVoices();
@@ -63,7 +81,7 @@ function speak(text, lang = 'en-US') {
 // ---------- Screens ----------
 function show(name) {
   document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('active', s.id === `screen-${name}`));
-  if (name !== 'quiz' && 'speechSynthesis' in window) speechSynthesis.cancel();
+  if (name !== 'quiz') stopSpeech();
 }
 
 function refreshStars() {
@@ -259,7 +277,8 @@ function init() {
   });
 
   if ('speechSynthesis' in window) speechSynthesis.getVoices(); // warm up voice list
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  // The Android app already ships its files, so the offline cache is only for the web version.
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !nativeTTS && !window.Capacitor) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }

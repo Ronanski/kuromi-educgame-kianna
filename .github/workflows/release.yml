@@ -1,0 +1,56 @@
+# Android APK -> Releases page.
+# Runs on push to main: if package.json "version" has no release yet (tag v<version>),
+# builds the APK and publishes a release. Bump the version to ship a new release.
+name: Release Android APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Check if this version is already released
+        id: ver
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$V" >/dev/null 2>&1; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.ver.outputs.exists == 'false'
+        uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - if: steps.ver.outputs.exists == 'false'
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - if: steps.ver.outputs.exists == 'false'
+        name: Test and build web files
+        run: npm ci && npm test && npm run build:web
+      - if: steps.ver.outputs.exists == 'false'
+        name: Create Android project with the game icon
+        run: |
+          npx cap add android
+          # Replace the default Capacitor launcher icon with the game icon.
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          for d in android/app/src/main/res/mipmap-*; do
+            cp icons/icon-192.png "$d/ic_launcher.png"
+            cp icons/icon-192.png "$d/ic_launcher_round.png"
+            rm -f "$d/ic_launcher_foreground.png"
+          done
+          npx cap sync android
+      - if: steps.ver.outputs.exists == 'false'
+        name: Build APK
+        run: |
+          cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/noxie-school-v${{ steps.ver.outputs.version }}.apk"
+      - if: steps.ver.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: v${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          files: noxie-school-v*.apk

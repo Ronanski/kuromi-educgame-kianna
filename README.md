@@ -4,6 +4,10 @@ Educational game for kids ages 4-6, made for Kianna. Goth-cute kitty theme. Work
 as an installable web app (PWA): open the GitHub Pages link in Chrome, then **⋮ → Add to Home screen**.
 It works offline after the first open.
 
+**Android APK:** download `noxie-school-v<version>.apk` from the
+[Releases page](https://github.com/Ronanski/kuromi-educgame-kianna/releases) and open it on the phone
+(allow "Install unknown apps" for the browser or file manager when asked).
+
 ## What's inside
 - **Math**: counting 1-10, finding numbers 0-10, addition up to 10, simple subtraction
 - **English**: picture → word, first letter of a word
@@ -17,6 +21,7 @@ It works offline after the first open.
 npm test          # unit tests for the question generators
 npm run smoke     # plays every subject in headless Chromium (needs Playwright)
 npm run serve     # local server at http://localhost:8080
+npm run build:web # copy the game into www/ (used by the Android build)
 ```
 
 ## Copyright
