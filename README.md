@@ -12,7 +12,10 @@ It works offline after the first open.
 - **Math**: counting 1-10, finding numbers 0-10, addition up to 10, simple subtraction
 - **English**: picture → word, first letter of a word
 - **Filipino**: larawan → salita, kulay, bilang (isa hanggang sampu)
-- Questions are read aloud (voice), there are 5 questions per round, and stars unlock stickers
+- **Mabuting Asal** (good manners), 8 lessons: Pagmamano, Po at Opo, Salamat Po, Pagbabahagi, Pagliligpit,
+  Tamang Tapunan, Pag-sorry, Pagpila. Each lesson is an animated story: **watch the wrong way ❌ → watch the
+  right way ✅ → the child does the right action** (drag / tap / fill in "po"), then gets a heart 💜 and a tip for parents
+- Questions are read aloud (voice: Cute or Normal), there are 5 questions per round, and stars unlock stickers
 - **Para sa Magulang**: voice on/off, reset stars, and **Palitan ang Mascot** (use your own picture,
   which stays only on the phone and is never uploaded)
 
@@ -20,6 +23,7 @@ It works offline after the first open.
 ```
 npm test          # unit tests for the question generators
 npm run smoke     # plays every subject in headless Chromium (needs Playwright)
+npm run smoke:values  # plays all 8 Mabuting Asal lessons (watch + practice)
 npm run serve     # local server at http://localhost:8080
 npm run build:web # copy the game into www/ (used by the Android build)
 ```

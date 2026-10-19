@@ -1,7 +1,7 @@
 // Offline cache. Bump CACHE when any listed file changes so devices get the update.
-const CACHE = 'noxie-school-v2';
+const CACHE = 'noxie-school-v3';
 const FILES = [
-  './', 'index.html', 'css/style.css', 'js/app.js', 'js/questions.js', 'js/character.js',
+  './', 'index.html', 'css/style.css', 'js/app.js', 'js/questions.js', 'js/character.js', 'js/speech.js', 'js/values.js', 'js/scene.js',
   'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 

@@ -1,5 +1,8 @@
 import { makeRound, ROUND_LENGTH } from './questions.js';
 import { noxieSVG } from './character.js';
+import { createSpeech, isNativeApp } from './speech.js';
+import { LESSONS, lessonById } from './values.js';
+import { playLesson } from './scene.js';
 
 const STICKERS = ['🦇', '🌙', '⭐', '💜', '🎀', '🔮', '🍬', '🦄', '🌸', '🧁', '🐈‍⬛', '👑', '🍭', '🪐', '🌈', '🎈'];
 const STARS_PER_STICKER = 5;
@@ -7,13 +10,15 @@ const STORE_KEY = 'noxie-school-v1';
 
 const $ = (id) => document.getElementById(id);
 
+const DEFAULTS = { stars: 0, voice: true, voiceStyle: 'cute', mascot: null, values: {} };
+
 // ---------- Saved progress (localStorage, safe if blocked) ----------
 function load() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return { stars: 0, voice: true, mascot: null, ...JSON.parse(raw) };
+    if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
   } catch { /* storage unavailable */ }
-  return { stars: 0, voice: true, mascot: null };
+  return { ...DEFAULTS };
 }
 function save() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {
@@ -45,41 +50,15 @@ function beep(freqs, dur = 0.12) {
 const sfxRight = () => beep([660, 880, 1175]);
 const sfxWrong = () => beep([300, 220], 0.15);
 
-// Android app (Capacitor): the WebView has no speechSynthesis, so use the phone's
-// native text-to-speech plugin instead. Undefined when running in a browser.
-const nativeTTS = window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins?.TextToSpeech : undefined;
-
-function stopSpeech() {
-  if (nativeTTS) nativeTTS.stop().catch(() => {});
-  else if ('speechSynthesis' in window) speechSynthesis.cancel();
-}
-
-function speak(text, lang = 'en-US') {
-  if (!state.voice) return;
-  if (nativeTTS) {
-    const opts = { text, rate: 0.9, pitch: 1.2, volume: 1.0, category: 'ambient' };
-    nativeTTS.stop().catch(() => {})
-      // Filipino voice may not be installed; retry in English.
-      .then(() => nativeTTS.speak({ ...opts, lang }))
-      .catch(() => lang !== 'en-US' && nativeTTS.speak({ ...opts, lang: 'en-US' }).catch(() => {}));
-    return;
-  }
-  if (!('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  const voices = speechSynthesis.getVoices();
-  // Filipino voices are rare; fall back to an English voice if missing.
-  const v = voices.find((x) => x.lang.replace('_', '-').startsWith(lang))
-    || voices.find((x) => x.lang.startsWith(lang.slice(0, 2)))
-    || voices.find((x) => x.lang.startsWith('en'));
-  if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = lang; }
-  u.rate = 0.9;
-  u.pitch = 1.2;
-  speechSynthesis.speak(u);
-}
+// ?fast=1 speeds up stories for automated tests.
+const FAST = new URLSearchParams(location.search).has('fast');
+const speech = createSpeech({ enabled: () => state.voice, style: () => state.voiceStyle, fast: FAST });
+const speak = (text, lang) => speech.speak(text, lang);
+const stopSpeech = () => speech.stop();
 
 // ---------- Screens ----------
 function show(name) {
+  if (name !== 'lesson') { lessonRun?.cancel(); lessonRun = null; }
   document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('active', s.id === `screen-${name}`));
   if (name !== 'quiz') stopSpeech();
 }
@@ -91,6 +70,10 @@ function refreshStars() {
 
 // ---------- Mascot (default SVG, or a parent-chosen picture kept on-device) ----------
 const MASCOTS = ['mascot-home', 'mascot-quiz', 'mascot-result', 'mascot-preview'];
+
+function mascotHTML() {
+  return state.mascot ? `<img class="custom" alt="Mascot" src="${state.mascot}">` : noxieSVG();
+}
 
 function renderMascots() {
   MASCOTS.forEach((id) => {
@@ -235,6 +218,59 @@ function finishQuiz() {
   speak(`Great job! You got ${earned} stars!`);
 }
 
+// ---------- Mabuting Asal (good manners) ----------
+let lessonRun = null;
+let currentLesson = null;
+
+function renderValuesMenu() {
+  const grid = $('values-grid');
+  grid.innerHTML = '';
+  for (const l of LESSONS) {
+    const b = document.createElement('button');
+    b.className = `lesson-card${state.values[l.id] ? ' done' : ''}`;
+    b.dataset.lesson = l.id;
+    b.innerHTML = `<span class="icon">${l.icon}</span><b>${l.title}</b><small>${l.en}</small>`;
+    b.addEventListener('click', () => startLesson(l.id));
+    grid.appendChild(b);
+  }
+  const done = LESSONS.filter((l) => state.values[l.id]).length;
+  $('values-count').textContent = `💜 ${done} / ${LESSONS.length}`;
+}
+
+function startLesson(id) {
+  currentLesson = lessonById(id);
+  show('lesson');
+  $('lesson-title').textContent = `${currentLesson.icon} ${currentLesson.title}`;
+  lessonRun = playLesson(currentLesson, {
+    stage: $('stage'),
+    caption: $('lesson-caption'),
+    phase: $('lesson-phase'),
+    speak: (text, lang) => speak(text, lang),
+    stop: stopSpeech,
+    mascotHTML,
+    speed: FAST ? 0.05 : 1,
+    cheer: sfxRight,
+    onFinish: finishLesson,
+  });
+}
+
+function finishLesson(lesson) {
+  const first = !state.values[lesson.id];
+  state.values[lesson.id] = true;
+  if (first) state.stars += 2;
+  save();
+  refreshStars();
+  $('done-icon').textContent = lesson.icon;
+  $('done-title').textContent = lesson.title;
+  $('done-phrase').textContent = `"${lesson.phrase}"`;
+  $('done-stars').textContent = first ? '+2 ⭐ at bagong puso 💜' : 'Magaling ulit! 💜';
+  $('done-tip').textContent = lesson.tip;
+  show('lesson-done');
+  confetti();
+  sfxRight();
+  speak(`Ang galing mo! Sabihin natin: ${lesson.phrase}`, 'fil-PH');
+}
+
 function renderStickers() {
   const unlocked = Math.floor(state.stars / STARS_PER_STICKER);
   $('sticker-grid').innerHTML = STICKERS
@@ -248,7 +284,7 @@ function init() {
   refreshStars();
   $('opt-voice').checked = state.voice;
 
-  document.querySelectorAll('.subject-btn').forEach((b) =>
+  document.querySelectorAll('.subject-btn[data-subject]').forEach((b) =>
     b.addEventListener('click', () => startQuiz(b.dataset.subject)));
   $('btn-home').addEventListener('click', () => show('home'));
   $('btn-speak').addEventListener('click', () => {
@@ -268,17 +304,28 @@ function init() {
   });
   $('btn-mascot-default').addEventListener('click', () => { state.mascot = null; save(); renderMascots(); });
   $('opt-voice').addEventListener('change', (e) => { state.voice = e.target.checked; save(); });
+  $('opt-voice-style').value = state.voiceStyle;
+  $('opt-voice-style').addEventListener('change', (e) => {
+    state.voiceStyle = e.target.value;
+    save();
+    speak('Hi! Ako si Noxie!', 'fil-PH');
+  });
+  $('btn-values').addEventListener('click', () => { renderValuesMenu(); show('values'); });
+  $('btn-values-home').addEventListener('click', () => show('home'));
+  $('btn-lesson-back').addEventListener('click', () => { renderValuesMenu(); show('values'); });
+  $('btn-lesson-again').addEventListener('click', () => startLesson(currentLesson.id));
+  $('btn-lesson-menu').addEventListener('click', () => { renderValuesMenu(); show('values'); });
+  $('btn-say-phrase').addEventListener('click', () => speak(currentLesson.phrase, 'fil-PH'));
   $('btn-reset').addEventListener('click', () => {
-    if (confirm('I-reset ang lahat ng stars at stickers?')) { state.stars = 0; save(); refreshStars(); }
+    if (confirm('I-reset ang lahat ng stars, stickers at aralin?')) { state.stars = 0; state.values = {}; save(); refreshStars(); }
   });
   $('mascot-home').addEventListener('click', () => {
     mascotReact($('mascot-home'), 'happy');
     speak(state.mascot ? "Hi! Let's learn together!" : "Hi! I'm Noxie! Let's learn together!");
   });
 
-  if ('speechSynthesis' in window) speechSynthesis.getVoices(); // warm up voice list
   // The Android app already ships its files, so the offline cache is only for the web version.
-  if ('serviceWorker' in navigator && location.protocol === 'https:' && !nativeTTS && !window.Capacitor) {
+  if ('serviceWorker' in navigator && location.protocol === 'https:'  && !isNativeApp) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 }
