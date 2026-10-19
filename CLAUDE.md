@@ -12,6 +12,8 @@ Read PROJECT_RULES.md and HANDOFF.md before changing anything.
 - Android APK: `.github/workflows/release.yml` (Capacitor 7). On push to `main`, if tag `v<package.json version>`
   does not exist yet, it builds a debug-signed APK and publishes a GitHub Release. Bump `version` to ship a new APK.
   The `android/` project is generated in CI (not committed).
+  APKs are signed with one permanent key from the `ANDROID_KEYSTORE_B64` secret (docs/SIGNING.md; never commit
+  the keystore or change the key). versionCode is derived from the version (0.2.1 -> 201).
 - Voice: browser `speechSynthesis` on the web; native `TextToSpeech` plugin inside the APK (WebView has no speechSynthesis).
 - Before pushing: `npm test`, `npm run smoke` and `npm run smoke:values` (set `NODE_PATH=/opt/node22/lib/node_modules` in the cloud container).
 - When you change any cached file, bump `CACHE` in `sw.js` so installed phones get the update.
